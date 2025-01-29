@@ -5,7 +5,6 @@ import (
     "flag"
     "fmt"
     "os"
-    "time"
 )
 
 func main() {
@@ -99,6 +98,6 @@ func txorDecrypt(data string, keys []string) string {
 }
 
 func selectKey(keys []string) string {
-    day := time.Now().UTC().Day()
-    return keys[day%len(keys)]
+    return keys[0]
 }
+
