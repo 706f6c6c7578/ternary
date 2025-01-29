@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-    decrypt := flag.Bool("d", false, "Decrypt the input (default is encrypt)")
+    decrypt := flag.Bool("d", false, "Decrypt the input")
     keyfile := flag.String("k", "", "Key file for encryption/decryption")
     flag.Parse()
 
@@ -61,13 +61,22 @@ func readKeysFromFile(filename string) ([]string, error) {
     return keys, nil
 }
 
+func txorOperation(a, b byte) byte {
+    txorTable := [3][3]byte{
+        {0, 1, 2},
+        {1, 2, 0},
+        {2, 0, 1},
+    }
+    return txorTable[a][b]
+}
+
 func txorEncrypt(data string, keys []string) string {
     key := selectKey(keys)
     result := make([]byte, len(data))
     for i := range data {
         a := data[i] - '0'
         b := key[i%len(key)] - '0'
-        result[i] = ((a + b) % 3) + '0'
+        result[i] = txorOperation(a, b) + '0'
     }
     return string(result)
 }
@@ -78,12 +87,18 @@ func txorDecrypt(data string, keys []string) string {
     for i := range data {
         a := data[i] - '0'
         b := key[i%len(key)] - '0'
-        result[i] = ((a - b + 3) % 3) + '0' // Add 3 to handle negative values
+        // Find inverse operation in TXOR table
+        for x := byte(0); x < 3; x++ {
+            if txorOperation(x, b) == a {
+                result[i] = x + '0'
+                break
+            }
+        }
     }
     return string(result)
 }
 
 func selectKey(keys []string) string {
-    day := time.Now().UTC().Day() // Change this logic if the key depends on a specific day
+    day := time.Now().UTC().Day()
     return keys[day%len(keys)]
 }
