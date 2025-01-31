@@ -1,51 +1,56 @@
 #!/bin/bash
 
-# Function for encryption: (x + y) mod 3
 encrypt() {
     local x=$1
     local y=$2
     echo $(( (x + y) % 3 ))
 }
 
-# Function for decryption: (z - y) mod 3
 decrypt() {
     local z=$1
     local y=$2
-    echo $(( (z - y + 3) % 3 ))  # +3 to avoid negative results
+    echo $(( (z - y + 3) % 3 ))
 }
 
-# Check if key filename was provided
-if [ -z "$1" ]; then
-    echo "Usage: $0 key.txt < infile > outfile"
+if [ "$1" = "-d" ]; then
+    DECRYPT=true
+    KEYFILE=$2
+else
+    DECRYPT=false
+    KEYFILE=$1
+fi
+
+if [ -z "$KEYFILE" ]; then
+    echo "Usage: $0 [-d] key.txt < infile > outfile"
     exit 1
 fi
 
-# Read key file
-key=$(cat "$1")
+# Read and trim key file
+key=$(tr -d '\r\n' < "$KEYFILE")
 
-# Read message from stdin
-message=$(cat)
+# Read and trim message from stdin
+message=$(tr -d '\r\n')
 
-# Check if message and key have the same length
 if [ ${#message} -ne ${#key} ]; then
     echo "Error: Message and key must have the same length"
     exit 1
 fi
 
-# Decrypt
-decrypted_result=""
+result=""
 for (( i=0; i<${#message}; i++ )); do
-    z=${message:$i:1}
+    x=${message:$i:1}
     y=${key:$i:1}
 
-    # Only process valid characters (0, 1, 2)
-    if [[ $z =~ ^[0-2]$ && $y =~ ^[0-2]$ ]]; then
-        decrypted_result+=$(decrypt $z $y)
+    if [[ $x =~ ^[0-2]$ && $y =~ ^[0-2]$ ]]; then
+        if [ "$DECRYPT" = true ]; then
+            result+=$(decrypt $x $y)
+        else
+            result+=$(encrypt $x $y)
+        fi
     else
         echo "Error: Invalid character in message or key"
         exit 1
     fi
 done
 
-# Output result
-echo "$decrypted_result"
+echo "$result"
